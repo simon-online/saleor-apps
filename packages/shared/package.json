@@ -5,7 +5,7 @@
     "lint:fix": "eslint --fix ."
   },
   "dependencies": {
-    "@urql/exchange-auth": "^2.1.4",
+    "@urql/exchange-auth": "^2.1.6",
     "eslint": "8.46.0",
     "pino": "^8.14.1",
     "pino-pretty": "^10.0.0",
