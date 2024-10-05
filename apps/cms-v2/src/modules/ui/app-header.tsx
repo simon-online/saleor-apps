@@ -1,5 +1,5 @@
 import { Breadcrumbs } from "@saleor/apps-ui/src/breadcrumbs";
-import { Box, PropsWithBox, Text } from "@saleor/macaw-ui/next";
+import { Box, PropsWithBox, Text } from "@saleor/macaw-ui";
 import { ComponentProps, ReactElement } from "react";
 
 type Props = PropsWithBox<{
@@ -30,7 +30,7 @@ export const AppHeader = ({
       marginBottom={14}
       borderBottomWidth={1}
       borderBottomStyle="solid"
-      borderColor={"neutralHighlight"}
+      borderColor="default1"
       paddingBottom={6}
       {...props}
     >

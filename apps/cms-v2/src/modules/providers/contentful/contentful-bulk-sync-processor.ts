@@ -1,18 +1,18 @@
-import { createLogger } from "@saleor/apps-shared";
 import { BulkImportProductFragment } from "../../../../generated/graphql";
 import { BulkSyncProcessor, BulkSyncProcessorHooks } from "../../bulk-sync/bulk-sync-processor";
 import { ContentfulProviderConfig } from "../../configuration";
 import { ContentfulClient } from "./contentful-client";
 import { contentfulRateLimiter } from "./contentful-rate-limiter";
+import { createLogger } from "@/logger";
 
 export class ContentfulBulkSyncProcessor implements BulkSyncProcessor {
-  private logger = createLogger({ name: "ContentfulBulkSyncProcessor" });
+  private logger = createLogger("ContentfulBulkSyncProcessor");
 
   constructor(private config: ContentfulProviderConfig.FullShape) {}
 
   async uploadProducts(
     products: BulkImportProductFragment[],
-    hooks: BulkSyncProcessorHooks
+    hooks: BulkSyncProcessorHooks,
   ): Promise<void> {
     const contentful = new ContentfulClient({
       accessToken: this.config.authToken,
@@ -41,14 +41,16 @@ export class ContentfulBulkSyncProcessor implements BulkSyncProcessor {
               },
             })
             .then((r) => {
-              if (r?.metadata) {
+              const resp = Array.isArray(r) ? r[0] : r;
+
+              if (resp?.metadata) {
                 if (hooks.onUploadSuccess) {
                   hooks.onUploadSuccess({ variantId: variant.id });
                 }
               }
             })
             .catch((e) => {
-              this.logger.trace(e, "Error while uploading product to Contentful");
+              this.logger.trace("Error while uploading product to Contentful", { error: e });
 
               if (hooks.onUploadError) {
                 hooks.onUploadError({ variantId: variant.id, error: e });

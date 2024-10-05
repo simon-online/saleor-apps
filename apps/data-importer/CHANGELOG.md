@@ -1,5 +1,179 @@
 # saleor-app-data-importer
 
+## 1.12.9
+
+### Patch Changes
+
+- fe5d5d5e: Updated @saleor/app-sdk to 0.50.3. This version removes the limitation of body size for the webhook payloads.
+
+## 1.12.8
+
+### Patch Changes
+
+- 2bc8c187: Now, the flag "bundlePagesExternals" is enabled, this means the cold-starts time were reduced for this app.
+
+## 1.12.7
+
+### Patch Changes
+
+- 45a47156: Updated @saleor/app-sdk to 0.50.2. No functional changes are introduced
+
+## 1.12.6
+
+### Patch Changes
+
+- 6fed4b19: Migrate to new newest MacawUI version. Functionally nothing has changed. UI may look a bit different but it will be on par with Dashboard UI.
+- Updated dependencies [6fed4b19]
+  - @saleor/apps-shared@1.11.2
+
+## 1.12.5
+
+### Patch Changes
+
+- e38c1417: You can now find how to run and test each app in README file
+
+## 1.12.4
+
+### Patch Changes
+
+- 17077505: Updated TypeScript version to 4.5.4.
+- Updated dependencies [17077505]
+  - @saleor/sentry-utils@0.2.3
+  - @saleor/apps-shared@1.11.1
+
+## 1.12.3
+
+### Patch Changes
+
+- fbdbaa28: Remove custom Next.js + Sentry error. It was causing non existing paths to be reported as 500 instead of 404. We catch Sentry errors in implicit anyway in api routes.
+- Updated dependencies [fbdbaa28]
+  - @saleor/sentry-utils@0.2.2
+
+## 1.12.2
+
+### Patch Changes
+
+- 2f59041c: Reverted shared Sentry configuration (init() part). It was not working properly - source maps were not properly assigned. Now configuration is not shared, but repeated in every app separately
+- Updated dependencies [2f59041c]
+  - @saleor/sentry-utils@0.2.1
+
+## 1.12.1
+
+### Patch Changes
+
+- 0c4ba39f: Update next.js config after Sentry rollback.
+
+## 1.12.0
+
+### Minor Changes
+
+- c4dcb863: Remove Pino logger library. It was already deprecated but for non migrated apps it was causing build errors. Right now we have one logger - @saleor/app-logger pkg.
+- 1a9912f5: Setup Sentry inside Next.js instrumentation file. It ensures that Sentry works properly for serverless environment.
+
+### Patch Changes
+
+- 37ecb246: Update pnpm to 9.2.0 version. It means that we also dropped support for Node.js less than 16.
+- cc047b1d: Downgraded Sentry package to v7. Previous upgrade to 8.x cause Sentry to conflict with Open Telemetry setup and Sentry was not working
+- Updated dependencies [37ecb246]
+- Updated dependencies [c4dcb863]
+- Updated dependencies [1a9912f5]
+  - @saleor/sentry-utils@0.2.0
+  - @saleor/apps-shared@1.11.0
+
+## 1.11.3
+
+### Patch Changes
+
+- 64d88b24: Update packages to ESM. See node [docs](https://nodejs.org/api/esm.html) for more info.
+- 5cbd3b63: Updated @saleor/app-sdk package to 0.50.1
+- Updated dependencies [64d88b24]
+- Updated dependencies [5cbd3b63]
+  - @saleor/apps-shared@1.10.3
+
+## 1.11.2
+
+### Patch Changes
+
+- 4ffef6be: Update `@sentry/nextjs` to 8.0.0 version. It should help us with attaching additional data to Sentry errors.
+- 2604ce1e: Updated Next.js to 14.2.3
+- Updated dependencies [2604ce1e]
+  - @saleor/apps-shared@1.10.2
+
+## 1.11.1
+
+### Patch Changes
+
+- Updated dependencies [f22f2b8a]
+  - @saleor/apps-shared@1.10.1
+
+## 1.11.0
+
+### Minor Changes
+
+- b29318a2: Currently, Dashboard requires from a user to have "MANAGE_APPS" to have access to the apps tab.
+  Since the release 3.20 Dashboard will allow all users to access to apps tabs without checking permission.
+  This means that apps will be checking if the user has "MANAGE_APPS" internally and show message "You do not have permission to access this page" if the user does not have the permission.
+
+### Patch Changes
+
+- Updated dependencies [b29318a2]
+  - @saleor/apps-shared@1.10.0
+
+## 1.10.5
+
+### Patch Changes
+
+- 29d10d4a: Update Next.js to version 14.1.0.
+- Updated dependencies [29d10d4a]
+  - @saleor/apps-shared@1.9.4
+
+## 1.10.4
+
+### Patch Changes
+
+- Updated dependencies [67afe8e4]
+  - @saleor/apps-shared@1.9.3
+
+## 1.10.3
+
+### Patch Changes
+
+- 5f564a0: Updated @saleor/app-sdk to 0.47.2
+
+## 1.10.2
+
+### Patch Changes
+
+- 531e7c1: Disabled Sentry tracing and Replays by default
+
+## 1.10.1
+
+### Patch Changes
+
+- 99f7066: Updated Macaw UI to 1.0.0-pre.7. Removed legacy Material UI dependency from older Macaw. Code was updated to work properly with some API changes
+- Updated dependencies [99f7066]
+  - @saleor/apps-shared@1.9.2
+
+## 1.10.0
+
+### Minor Changes
+
+- a50df02: Reduced Sentry traces sample rate to 0.1
+
+## 1.9.9
+
+### Patch Changes
+
+- fdabc51: Mapped app-sdk package to root library
+- Updated dependencies [fdabc51]
+  - @saleor/apps-shared@1.9.1
+
+## 1.9.8
+
+### Patch Changes
+
+- 148a6d7: Updated Sentry to 7.77.0
+
 ## 1.9.7
 
 ### Patch Changes

@@ -1,6 +1,6 @@
 import { buildClient, Client, SimpleSchemaTypes, ApiError } from "@datocms/cma-client-browser";
 import { WebhookProductVariantFragment } from "../../../../generated/graphql";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 import { z } from "zod";
 
 import * as Sentry from "@sentry/nextjs";
@@ -17,7 +17,7 @@ type Context = {
  */
 export class DatoCMSClient {
   private client: Client;
-  private logger = createLogger({ name: "DatoCMSClient" });
+  private logger = createLogger("DatoCMSClient");
 
   constructor(opts: { apiToken: string }) {
     this.client = buildClient({ apiToken: opts.apiToken });
@@ -71,7 +71,7 @@ export class DatoCMSClient {
      * Dato requires JSON to be stringified first so overwrite this single fields
      */
     fields[configuration.productVariantFieldsMapping.channels] = JSON.stringify(
-      variant.channelListings
+      variant.channelListings,
     );
 
     return {
@@ -81,7 +81,9 @@ export class DatoCMSClient {
   }
 
   async deleteProductVariant({ configuration, variant }: Context) {
-    this.logger.debug("Trying to delete product variant");
+    this.logger.debug("deleteProductVariant called", {
+      configId: configuration.id,
+    });
 
     const remoteProducts = await this.getItemBySaleorVariantId({
       variantIdFieldName: configuration.productVariantFieldsMapping.variantId,
@@ -91,30 +93,44 @@ export class DatoCMSClient {
 
     if (remoteProducts.length > 1) {
       this.logger.warn(
-        "More than 1 variant with the same ID found in the CMS. Will remove all of them, but this should not happen if unique field was set"
+        "More than 1 variant with the same ID found in the CMS. Will remove all of them, but this should not happen if unique field was set",
+        {
+          remoteProductsIds: remoteProducts.map((p) => p.id),
+        },
       );
     }
 
     if (remoteProducts.length === 0) {
-      this.logger.trace("No product found in Datocms, skipping deletion");
+      this.logger.info("No product found in Datocms, skipping deletion");
 
       return;
     }
 
+    this.logger.debug("Deleting product variant", {
+      remoteProductsIds: remoteProducts.map((p) => p.id),
+    });
+
     return Promise.all(
       remoteProducts.map((p) => {
         return this.client.items.rawDestroy(p.id);
-      })
+      }),
     );
   }
 
   uploadProductVariant(context: Context) {
-    this.logger.debug("Trying to upload product variant");
+    this.logger.debug("uploadProductVariant called", {
+      fieldMappping: context.configuration.productVariantFieldsMapping,
+      configId: context.configuration.id,
+    });
 
     return this.client.items.create(this.mapVariantToDatoCMSFields(context));
   }
 
   async updateProductVariant({ configuration, variant }: Context) {
+    this.logger.debug("updateProductVariant called", {
+      configId: configuration.id,
+    });
+
     const products = await this.getItemBySaleorVariantId({
       variantIdFieldName: configuration.productVariantFieldsMapping.variantId,
       variantID: variant.id,
@@ -125,8 +141,9 @@ export class DatoCMSClient {
       this.logger.warn(
         "Found more than one product variant with the same ID. Will update all of them, but this should not happen if unique field was set",
         {
-          variantID: variant.id,
-        }
+          variantId: variant.id,
+          productsIds: products.map((p) => p.id),
+        },
       );
     }
 
@@ -139,14 +156,16 @@ export class DatoCMSClient {
           this.mapVariantToDatoCMSFields({
             configuration,
             variant,
-          })
+          }),
         );
-      })
+      }),
     );
   }
 
   upsertProduct({ configuration, variant }: Context) {
-    this.logger.debug("Trying to upsert product variant");
+    this.logger.debug("upsertProduct called", {
+      configId: configuration.id,
+    });
 
     const DatoErrorBody = z.object({
       data: z.array(
@@ -158,7 +177,7 @@ export class DatoCMSClient {
               }),
             }),
           }),
-        })
+        }),
       ),
     });
 
@@ -167,15 +186,20 @@ export class DatoCMSClient {
         const errorBody = DatoErrorBody.parse(err.response.body);
 
         const isUniqueIdError = errorBody.data.find(
-          (d) => d.validation.attributes.details.code === "VALIDATION_UNIQUE"
+          (d) => d.validation.attributes.details.code === "VALIDATION_UNIQUE",
         );
 
         if (isUniqueIdError) {
+          this.logger.info("Found unique id error, will update the product", {
+            error: isUniqueIdError,
+            variantId: variant.product.id,
+          });
           return this.updateProductVariant({ configuration, variant });
         } else {
           throw new Error(JSON.stringify(err.cause));
         }
       } catch (e) {
+        this.logger.error("Invalid error shape from DatoCMS", { error: err });
         Sentry.captureException("Invalid error shape from DatoCMS", (c) => {
           return c.setExtra("error", err);
         });

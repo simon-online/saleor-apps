@@ -1,4 +1,5 @@
 import { Client, OperationResult } from "urql";
+
 import {
   CreateWebhookDocument,
   CreateWebhookMutationVariables,
@@ -6,14 +7,10 @@ import {
   EnableWebhookDocument,
   FetchOwnWebhooksDocument,
   RemoveWebhookDocument,
-  WebhookEventTypeEnum,
 } from "../../generated/graphql";
 import { createLogger } from "../lib/logger";
-import { appWebhooks } from "../../webhooks";
 
-const logger = createLogger({
-  service: "WebhookActivityTogglerService",
-});
+const logger = createLogger("WebhookActivityTogglerService");
 
 export interface IWebhooksActivityClient {
   fetchAppWebhooksIDs(id: string): Promise<string[]>;
@@ -29,9 +26,7 @@ interface IRecreateWebhooksArgs {
 }
 
 export interface IWebhookActivityTogglerService {
-  disableOwnWebhooks(webhooksIdsParam?: string[]): Promise<void>;
   enableOwnWebhooks(): Promise<void>;
-  recreateOwnWebhooks(args: IRecreateWebhooksArgs): Promise<void>;
 }
 
 export class WebhooksActivityClient implements IWebhooksActivityClient {
@@ -39,12 +34,9 @@ export class WebhooksActivityClient implements IWebhooksActivityClient {
 
   private handleOperationFailure(r: OperationResult) {
     if (r.error || !r.data) {
-      logger.error(
-        {
-          error: r.error,
-        },
-        "Error disabling webhook",
-      );
+      logger.error("Error disabling webhook", {
+        error: r.error,
+      });
       throw new Error("Error disabling webhook");
     }
   }
@@ -133,57 +125,15 @@ export class WebhookActivityTogglerService implements IWebhookActivityTogglerSer
     this.webhooksClient = options?.WebhooksClient ?? new WebhooksActivityClient(this.client);
   }
 
-  /**
-   * Disable webhooks with provided IDs. If not provided, it will fetch them from Saleor
-   */
-  async disableOwnWebhooks(webhooksIdsParam?: string[]) {
-    const webhooksIds =
-      webhooksIdsParam ?? (await this.webhooksClient.fetchAppWebhooksIDs(this.ownAppId));
-
-    logger.info(webhooksIds, "Disabling own webhooks");
-
-    if (!webhooksIds) {
-      throw new Error("Failed fetching webhooks");
-    }
-
-    await Promise.all(webhooksIds.map((id) => this.webhooksClient.disableSingleWebhook(id)));
-  }
-
   async enableOwnWebhooks() {
     const webhooksIds = await this.webhooksClient.fetchAppWebhooksIDs(this.ownAppId);
 
-    logger.info(webhooksIds, "Enabling own webhooks");
+    logger.info("Enabling own webhooks", { webhooksIds });
 
     if (!webhooksIds) {
       throw new Error("Failed fetching webhooks");
     }
 
     await Promise.all(webhooksIds.map((id) => this.webhooksClient.enableSingleWebhook(id)));
-  }
-
-  async recreateOwnWebhooks({ baseUrl, enableWebhooks }: IRecreateWebhooksArgs) {
-    const webhooksIds = await this.webhooksClient.fetchAppWebhooksIDs(this.ownAppId);
-
-    if (!webhooksIds) {
-      throw new Error("Failed fetching webhooks");
-    }
-
-    logger.debug("Removing old webhooks");
-    await Promise.all(webhooksIds.map((id) => this.webhooksClient.removeSingleWebhook(id)));
-    logger.debug("Creating new webhooks");
-    await Promise.all(
-      appWebhooks.map((webhook) => {
-        const manifest = webhook.getWebhookManifest(baseUrl);
-
-        return this.webhooksClient.createWebhook({
-          events: manifest.asyncEvents as WebhookEventTypeEnum[],
-          targetUrl: manifest.targetUrl,
-          name: manifest.name,
-          query: manifest.query,
-          isActive: enableWebhooks,
-        });
-      }),
-    );
-    logger.debug("Done creating new webhooks");
   }
 }

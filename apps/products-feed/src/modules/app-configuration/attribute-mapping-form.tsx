@@ -1,7 +1,7 @@
 import { AppConfigSchema, RootConfig } from "./app-config";
 import { useForm } from "react-hook-form";
 
-import { Box, Button, Text } from "@saleor/macaw-ui/next";
+import { Box, Button, Text } from "@saleor/macaw-ui";
 
 import React, { useCallback, useMemo } from "react";
 import { Multiselect } from "@saleor/react-hook-form-macaw";
@@ -66,6 +66,12 @@ export const AttributeMappingConfigurationForm = (props: Props) => {
         label="Size attributes"
         options={options}
       />
+      <Multiselect
+        control={control}
+        name="gtinAttributeIds"
+        label="GTIN attributes"
+        options={options}
+      />
       <Box display={"flex"} flexDirection={"row"} gap={4} justifyContent={"flex-end"}>
         <Button type="submit" variant="primary">
           Save mapping
@@ -98,7 +104,7 @@ export const ConnectedAttributeMappingForm = () => {
     async (data: AttributeMappingConfiguration) => {
       mutate(data);
     },
-    [mutate]
+    [mutate],
   );
 
   const formData: AttributeMappingConfiguration = useMemo(() => {
@@ -112,6 +118,7 @@ export const ConnectedAttributeMappingForm = () => {
       brandAttributeIds: [],
       patternAttributeIds: [],
       materialAttributeIds: [],
+      gtinAttributeIds: [],
     };
   }, [data]);
 

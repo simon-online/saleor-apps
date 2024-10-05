@@ -1,5 +1,6 @@
 import { EditorJsPlaintextRenderer } from "@saleor/apps-shared";
 import {
+  AttributeInputTypeEnum,
   ProductAttributesDataFragment,
   ProductVariantWebhookPayloadFragment,
 } from "../../../generated/graphql";
@@ -64,6 +65,19 @@ export function categoryHierarchicalFacets({ product }: ProductVariantWebhookPay
 
 export type AlgoliaObject = ReturnType<typeof productAndVariantToAlgolia>;
 
+const isAttributeValueBooleanType = (
+  attributeValue: ProductAttributesDataFragment["values"],
+): attributeValue is [{ boolean: boolean; inputType: AttributeInputTypeEnum.Boolean }] => {
+  return (
+    /**
+     * Boolean type can be only a single value. List API exists due to multi-value fields like multiselects
+     */
+    attributeValue.length === 1 &&
+    attributeValue[0].inputType === AttributeInputTypeEnum.Boolean &&
+    typeof attributeValue[0].boolean === "boolean"
+  );
+};
+
 /**
  *  Returns object with a key being attribute name and value of all attribute values
  *  separated by comma. If no value is selected, an empty string will be used instead.
@@ -73,11 +87,32 @@ const mapSelectedAttributesToRecord = (attr: ProductAttributesDataFragment) => {
     return undefined;
   }
 
+  /**
+   * TODO: How/When name can be empty?
+   */
   const filteredValues = attr.values.filter((v) => !!v.name?.length);
 
+  let value: string | boolean;
+
+  /**
+   * Strategy for boolean type only
+   * REF SHOPX-332
+   * TODO: Other input types should be handled and properly mapped
+   */
+  if (isAttributeValueBooleanType(filteredValues)) {
+    value = filteredValues[0].boolean;
+  } else {
+    /**
+     * Fallback to initial/previous behavior
+     * TODO: Its not correct to use "name" field always. E.g. for plaintext field more accurate is "plainText",
+     *   for "date" field there are date and dateTime fields. "Name" can work on the frontend but doesn't fit for faceting
+     */
+    value = filteredValues.map((v) => v.name).join(", ") || "";
+  }
+
   return {
-    [attr.attribute.name]: filteredValues.map((v) => v.name).join(", ") || "",
-  };
+    [attr.attribute.name]: value,
+  } as Record<string, string | boolean>;
 };
 
 export function productAndVariantToAlgolia({
@@ -121,6 +156,10 @@ export function productAndVariantToAlgolia({
 
   const media = variant.product.media?.map((m) => ({ url: m.url, type: m.type })) || [];
 
+  const parentProductPricing = variant.product.channelListings?.find(
+    (listing) => listing.channel.slug === channel,
+  )?.pricing;
+
   const document = {
     objectID: productAndVariantToObjectID(variant),
     productId: product.id,
@@ -128,6 +167,7 @@ export function productAndVariantToAlgolia({
     name: `${product.name} - ${variant.name}`,
     productName: product.name,
     variantName: variant.name,
+    sku: variant.sku,
     attributes,
     media,
     description: safeParseJson(product.description),
@@ -138,6 +178,13 @@ export function productAndVariantToAlgolia({
      * Deprecated
      */
     grossPrice: listing?.price?.amount,
+    /**
+     * BUG: This will work in bulk-sync, because channel is set in the query.
+     * In webhook (like product_variant_updated) pricing is null, so these fields will be purged in Algolia.
+     *
+     * Need to either add fields to Core (https://github.com/saleor/saleor/issues/14748)
+     * or dynamically fetch missing data
+     */
     pricing: {
       price: {
         net: variant.pricing?.price?.net.amount,
@@ -151,6 +198,28 @@ export function productAndVariantToAlgolia({
       priceUndiscounted: {
         net: variant.pricing?.priceUndiscounted?.net.amount,
         gross: variant.pricing?.priceUndiscounted?.gross.amount,
+      },
+    },
+    productPricing: {
+      priceRange: {
+        start: {
+          gross: parentProductPricing?.priceRange?.start?.gross.amount,
+          net: parentProductPricing?.priceRange?.start?.net.amount,
+        },
+        stop: {
+          gross: parentProductPricing?.priceRange?.stop?.gross.amount,
+          net: parentProductPricing?.priceRange?.stop?.net.amount,
+        },
+      },
+      priceRangeUndiscounted: {
+        start: {
+          gross: parentProductPricing?.priceRangeUndiscounted?.start?.gross.amount,
+          net: parentProductPricing?.priceRangeUndiscounted?.start?.net.amount,
+        },
+        stop: {
+          gross: parentProductPricing?.priceRangeUndiscounted?.stop?.gross.amount,
+          net: parentProductPricing?.priceRangeUndiscounted?.stop?.net.amount,
+        },
       },
     },
     inStock,

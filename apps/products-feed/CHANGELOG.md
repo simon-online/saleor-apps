@@ -1,5 +1,321 @@
 # saleor-app-products-feed
 
+## 1.19.9
+
+### Patch Changes
+
+- Updated dependencies [f1025fae]
+  - @saleor/apps-otel@1.3.3
+
+## 1.19.8
+
+### Patch Changes
+
+- Updated dependencies [93969b2a]
+  - @saleor/apps-otel@1.3.2
+
+## 1.19.7
+
+### Patch Changes
+
+- fe5d5d5e: Updated @saleor/app-sdk to 0.50.3. This version removes the limitation of body size for the webhook payloads.
+
+## 1.19.6
+
+### Patch Changes
+
+- 2bc8c187: Now, the flag "bundlePagesExternals" is enabled, this means the cold-starts time were reduced for this app.
+
+## 1.19.5
+
+### Patch Changes
+
+- 45a47156: Updated @saleor/app-sdk to 0.50.2. No functional changes are introduced
+
+## 1.19.4
+
+### Patch Changes
+
+- 6fed4b19: Migrate to new newest MacawUI version. Functionally nothing has changed. UI may look a bit different but it will be on par with Dashboard UI.
+- Updated dependencies [6fed4b19]
+  - @saleor/react-hook-form-macaw@0.2.10
+  - @saleor/apps-shared@1.11.2
+  - @saleor/apps-ui@1.2.8
+
+## 1.19.3
+
+### Patch Changes
+
+- 93f96793: Entries within the xml file are no longer duplicated.
+- d3d4d155: Now you can see in logs if someone is exceeding variant fetching limits.
+
+## 1.19.2
+
+### Patch Changes
+
+- e38c1417: You can now find how to run and test each app in README file
+
+## 1.19.1
+
+### Patch Changes
+
+- 17077505: Updated TypeScript version to 4.5.4.
+- Updated dependencies [17077505]
+  - @saleor/react-hook-form-macaw@0.2.9
+  - @saleor/webhook-utils@0.1.4
+  - @saleor/sentry-utils@0.2.3
+  - @saleor/apps-logger@1.2.9
+  - @saleor/apps-shared@1.11.1
+  - @saleor/apps-otel@1.3.1
+  - @saleor/apps-ui@1.2.7
+
+## 1.19.0
+
+### Minor Changes
+
+- 19f288a4: You can now see more context information in logs that should be helpful in debugging issues with the app.
+
+### Patch Changes
+
+- Updated dependencies [6f2d6abb]
+  - @saleor/apps-otel@1.3.0
+
+## 1.18.3
+
+### Patch Changes
+
+- fbdbaa28: Remove custom Next.js + Sentry error. It was causing non existing paths to be reported as 500 instead of 404. We catch Sentry errors in implicit anyway in api routes.
+- Updated dependencies [fbdbaa28]
+  - @saleor/sentry-utils@0.2.2
+
+## 1.18.2
+
+### Patch Changes
+
+- 2f59041c: Reverted shared Sentry configuration (init() part). It was not working properly - source maps were not properly assigned. Now configuration is not shared, but repeated in every app separately
+- Updated dependencies [2f59041c]
+  - @saleor/sentry-utils@0.2.1
+
+## 1.18.1
+
+### Patch Changes
+
+- 0c4ba39f: Update next.js config after Sentry rollback.
+- Updated dependencies [0c4ba39f]
+- Updated dependencies [0c4ba39f]
+- Updated dependencies [5c851a6c]
+  - @saleor/apps-otel@1.2.2
+  - @saleor/apps-logger@1.2.8
+
+## 1.18.0
+
+### Minor Changes
+
+- c4dcb863: Remove Pino logger library. It was already deprecated but for non migrated apps it was causing build errors. Right now we have one logger - @saleor/app-logger pkg.
+- 1a9912f5: Setup Sentry inside Next.js instrumentation file. It ensures that Sentry works properly for serverless environment.
+
+### Patch Changes
+
+- 37ecb246: Update pnpm to 9.2.0 version. It means that we also dropped support for Node.js less than 16.
+- cc047b1d: Downgraded Sentry package to v7. Previous upgrade to 8.x cause Sentry to conflict with Open Telemetry setup and Sentry was not working
+- Updated dependencies [37ecb246]
+- Updated dependencies [c4dcb863]
+- Updated dependencies [1a9912f5]
+  - @saleor/apps-logger@1.2.7
+  - @saleor/apps-otel@1.2.1
+  - @saleor/react-hook-form-macaw@0.2.8
+  - @saleor/sentry-utils@0.2.0
+  - @saleor/apps-shared@1.11.0
+  - @saleor/apps-ui@1.2.6
+  - @saleor/webhook-utils@0.1.3
+
+## 1.17.7
+
+### Patch Changes
+
+- 64d88b24: Update packages to ESM. See node [docs](https://nodejs.org/api/esm.html) for more info.
+- 5cbd3b63: Updated @saleor/app-sdk package to 0.50.1
+- Updated dependencies [64d88b24]
+- Updated dependencies [5cbd3b63]
+- Updated dependencies [e1ea31be]
+  - @saleor/react-hook-form-macaw@0.2.7
+  - @saleor/webhook-utils@0.1.2
+  - @saleor/apps-logger@1.2.6
+  - @saleor/apps-shared@1.10.3
+  - @saleor/apps-otel@1.2.0
+  - @saleor/apps-ui@1.2.5
+
+## 1.17.6
+
+### Patch Changes
+
+- 3eaa4521: Respect the cursor for the first page
+
+## 1.17.5
+
+### Patch Changes
+
+- 4ffef6be: Update `@sentry/nextjs` to 8.0.0 version. It should help us with attaching additional data to Sentry errors.
+- 2604ce1e: Updated Next.js to 14.2.3
+- Updated dependencies [4ffef6be]
+- Updated dependencies [2604ce1e]
+  - @saleor/apps-logger@1.2.5
+  - @saleor/webhook-utils@0.1.1
+  - @saleor/apps-shared@1.10.2
+  - @saleor/apps-ui@1.2.4
+  - @saleor/apps-otel@1.1.0
+  - @saleor/react-hook-form-macaw@0.2.6
+
+## 1.17.4
+
+### Patch Changes
+
+- Updated dependencies [eec25524]
+- Updated dependencies [827be8c8]
+  - @saleor/apps-logger@1.2.4
+  - @saleor/webhook-utils@0.1.0
+
+## 1.17.3
+
+### Patch Changes
+
+- Updated dependencies [528b981e]
+  - @saleor/apps-logger@1.2.3
+
+## 1.17.2
+
+### Patch Changes
+
+- Updated dependencies [f22f2b8a]
+- Updated dependencies [df03c571]
+  - @saleor/apps-logger@1.2.2
+  - @saleor/apps-shared@1.10.1
+  - @saleor/webhook-utils@0.0.7
+
+## 1.17.1
+
+### Patch Changes
+
+- f7ecb7bd: Logger context can now pass path and project_name to help with debugging
+- Updated dependencies [0a441ac9]
+- Updated dependencies [f7ecb7bd]
+  - @saleor/apps-logger@1.2.1
+
+## 1.17.0
+
+### Minor Changes
+
+- b29318a2: Currently, Dashboard requires from a user to have "MANAGE_APPS" to have access to the apps tab.
+  Since the release 3.20 Dashboard will allow all users to access to apps tabs without checking permission.
+  This means that apps will be checking if the user has "MANAGE_APPS" internally and show message "You do not have permission to access this page" if the user does not have the permission.
+
+### Patch Changes
+
+- Updated dependencies [b29318a2]
+  - @saleor/apps-shared@1.10.0
+  - @saleor/webhook-utils@0.0.6
+
+## 1.16.1
+
+### Patch Changes
+
+- 29d10d4a: Update Next.js to version 14.1.0.
+- Updated dependencies [29d10d4a]
+  - @saleor/apps-shared@1.9.4
+  - @saleor/apps-ui@1.2.3
+  - @saleor/apps-logger@1.2.0
+  - @saleor/apps-otel@1.1.0
+  - @saleor/react-hook-form-macaw@0.2.6
+  - @saleor/webhook-utils@0.0.5
+
+## 1.16.0
+
+### Minor Changes
+
+- 6b974f54: Add open-telemetry to products-feed application
+
+## 1.15.1
+
+### Patch Changes
+
+- Updated dependencies [67afe8e4]
+  - @saleor/apps-shared@1.9.3
+  - @saleor/webhook-utils@0.0.4
+
+## 1.15.0
+
+### Minor Changes
+
+- 4ef6539: You can now map GTIN attribute from Saleor to your Google Feed.
+
+## 1.14.2
+
+### Patch Changes
+
+- 5f564a0: Updated @saleor/app-sdk to 0.47.2
+
+## 1.14.1
+
+### Patch Changes
+
+- 531e7c1: Disabled Sentry tracing and Replays by default
+
+## 1.14.0
+
+### Minor Changes
+
+- 5eb17b2: Added "weight" attribute to the Google product feed.
+
+  The attribute is added to the item entry when weight is defined and product is marked as requiring a shipping.
+
+### Patch Changes
+
+- 99f7066: Updated Macaw UI to 1.0.0-pre.7. Removed legacy Material UI dependency from older Macaw. Code was updated to work properly with some API changes
+- Updated dependencies [99f7066]
+  - @saleor/react-hook-form-macaw@0.2.6
+  - @saleor/apps-shared@1.9.2
+  - @saleor/apps-ui@1.2.2
+  - @saleor/webhook-utils@0.0.3
+
+## 1.13.0
+
+### Minor Changes
+
+- a50df02: Reduced Sentry traces sample rate to 0.1
+
+### Patch Changes
+
+- f4c67e8: Updated TRPC version
+
+## 1.12.5
+
+### Patch Changes
+
+- fdabc51: Mapped app-sdk package to root library
+- Updated dependencies [fdabc51]
+  - @saleor/webhook-utils@0.0.2
+  - @saleor/apps-shared@1.9.1
+  - @saleor/apps-ui@1.2.1
+
+## 1.12.4
+
+### Patch Changes
+
+- 148a6d7: Updated Sentry to 7.77.0
+
+## 1.12.3
+
+### Patch Changes
+
+- c66e70c: Fixed lambda execution time on Vercel deployments with `vercel.json` file.
+
+## 1.12.2
+
+### Patch Changes
+
+- ae6dbb1: Removed webhooks on product changes used for feed cache due to changed max execution time.
+- ae6dbb1: Changed Vercel's maximum execution time to be 5 minutes for feed generation. This should help with the previous limits of 60s, that was not enough for feed to be generated.
+
 ## 1.12.1
 
 ### Patch Changes

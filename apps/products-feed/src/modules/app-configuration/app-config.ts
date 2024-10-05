@@ -1,5 +1,5 @@
-import { createLogger } from "@saleor/apps-shared";
 import { z } from "zod";
+import { createLogger } from "../../logger";
 
 const imageSizeFieldSchema = z.coerce.number().gte(256).default(1024);
 
@@ -23,6 +23,7 @@ const attributeMappingSchema = z.object({
   sizeAttributeIds: z.array(z.string()).default([]),
   materialAttributeIds: z.array(z.string()).default([]),
   patternAttributeIds: z.array(z.string()).default([]),
+  gtinAttributeIds: z.array(z.string()).default([]),
 });
 
 const s3ConfigSchema = z.object({
@@ -61,7 +62,7 @@ export type RootConfig = z.infer<typeof rootAppConfigSchema>;
 
 export type ChannelUrlsConfig = z.infer<typeof AppConfigSchema.channelUrls>;
 
-const logger = createLogger({ name: "AppConfig" });
+const logger = createLogger("AppConfig");
 
 export class AppConfig {
   private rootData: RootConfig = {
@@ -77,7 +78,7 @@ export class AppConfig {
       try {
         this.rootData = rootAppConfigSchema.parse(initialData);
       } catch (e) {
-        logger.error(e, "Could not parse initial data");
+        logger.error("Could not parse initial data", { error: e });
         throw new Error("Can't load the configuration");
       }
     }
@@ -97,37 +98,43 @@ export class AppConfig {
 
   setS3(s3Config: z.infer<typeof s3ConfigSchema>) {
     try {
+      logger.debug("Setting S3 config", { s3Config });
       this.rootData.s3 = s3ConfigSchema.parse(s3Config);
 
+      logger.debug("S3 config saved");
       return this;
     } catch (e) {
-      logger.info(e, "Invalid S3 config provided");
+      logger.info("Invalid S3 config provided", { error: e });
       throw new Error("Invalid S3 config provided");
     }
   }
 
   setAttributeMapping(attributeMapping: z.infer<typeof attributeMappingSchema>) {
     try {
+      logger.debug("Setting attribute mapping", { attributeMapping });
       this.rootData.attributeMapping = attributeMappingSchema.parse(attributeMapping);
 
+      logger.debug("Attribute mapping saved");
       return this;
     } catch (e) {
-      logger.info(e, "Invalid mapping config provided");
+      logger.info("Invalid mapping config provided", { error: e });
       throw new Error("Invalid mapping config provided");
     }
   }
 
   setChannelUrls(channelSlug: string, urlsConfig: z.infer<typeof urlConfigurationSchema>) {
     try {
+      logger.debug("Setting channel urls", { channelSlug, urlsConfig });
       const parsedConfig = urlConfigurationSchema.parse(urlsConfig);
 
       this.rootData.channelConfig[channelSlug] = {
         storefrontUrls: parsedConfig,
       };
 
+      logger.debug("Channel urls saved");
       return this;
     } catch (e) {
-      logger.info(e, "Invalid channels config provided");
+      logger.info("Invalid channels config provided", { error: e });
       throw new Error("Invalid channels config provided");
     }
   }

@@ -1,7 +1,11 @@
 import { NextWebhookApiHandler } from "@saleor/app-sdk/handlers/next";
+import { wrapWithLoggerContext } from "@saleor/apps-logger/node";
+import { withOtel } from "@saleor/apps-otel";
+
 import { ProductCreated } from "../../../../../generated/graphql";
-import { WebhookActivityTogglerService } from "../../../../domain/WebhookActivityToggler.service";
+import { AlgoliaErrorParser } from "../../../../lib/algolia/algolia-error-parser";
 import { createLogger } from "../../../../lib/logger";
+import { loggerContext } from "../../../../lib/logger-context";
 import { webhookProductCreated } from "../../../../webhooks/definitions/product-created";
 import { createWebhookContext } from "../../../../webhooks/webhook-context";
 
@@ -11,16 +15,14 @@ export const config = {
   },
 };
 
-const logger = createLogger({
-  service: "webhookProductCreatedWebhookHandler",
-});
+const logger = createLogger("webhookProductCreatedWebhookHandler");
 
 export const handler: NextWebhookApiHandler<ProductCreated> = async (req, res, context) => {
   const { event, authData } = context;
 
-  logger.debug(
-    `New event ${event} (${context.payload?.__typename}) from the ${authData.domain} domain has been received!`,
-  );
+  logger.info(`New event received: ${event} (${context.payload?.__typename})`, {
+    saleorApiUrl: authData.saleorApiUrl,
+  });
 
   const { product } = context.payload;
 
@@ -35,28 +37,35 @@ export const handler: NextWebhookApiHandler<ProductCreated> = async (req, res, c
     try {
       await algoliaClient.createProduct(product);
 
+      logger.info("Algolia createProduct success");
+
       res.status(200).end();
       return;
     } catch (e) {
-      logger.info(e, "Algolia createProduct failed. Webhooks will be disabled");
+      if (AlgoliaErrorParser.isRecordSizeTooBigError(e)) {
+        logger.error("Failed to create and save product", {
+          error: e,
+        });
 
-      const webhooksToggler = new WebhookActivityTogglerService(authData.appId, apiClient);
+        return res.status(413).send((e as Error).message);
+      }
 
-      logger.trace("Will disable webhooks");
+      logger.error("Failed to execute product_created webhook (algoliaClient.createProduct)", {
+        error: e,
+      });
 
-      await webhooksToggler.disableOwnWebhooks(
-        context.payload.recipient?.webhooks?.map((w) => w.id),
-      );
-
-      logger.trace("Webhooks disabling operation finished");
-
-      return res.status(500).send("Operation failed, webhooks are disabled");
+      return res.status(500).send("Operation failed due to error");
     }
   } catch (e) {
+    logger.error("Failed to execute product_created webhook (createWebhookContext)", { error: e });
+
     return res.status(400).json({
       message: (e as Error).message,
     });
   }
 };
 
-export default webhookProductCreated.createHandler(handler);
+export default wrapWithLoggerContext(
+  withOtel(webhookProductCreated.createHandler(handler), "api/webhooks/saleor/product_created"),
+  loggerContext,
+);

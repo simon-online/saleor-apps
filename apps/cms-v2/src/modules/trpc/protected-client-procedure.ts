@@ -3,7 +3,11 @@ import { middleware, procedure } from "./trpc-server";
 import { TRPCError } from "@trpc/server";
 import { ProtectedHandlerError } from "@saleor/app-sdk/handlers/next";
 import { saleorApp } from "../../saleor-app";
-import { createGraphQLClient, logger } from "@saleor/apps-shared";
+import { createLogger, logger as appLogger } from "@/logger";
+import { createInstrumentedGraphqlClient } from "./create-instrumented-graphql-client";
+import { REQUIRED_SALEOR_PERMISSIONS } from "@saleor/apps-shared";
+
+const logger = createLogger("protectedClientProcedure");
 
 const attachAppToken = middleware(async ({ ctx, next }) => {
   logger.debug("attachAppToken middleware");
@@ -38,12 +42,9 @@ const attachAppToken = middleware(async ({ ctx, next }) => {
 });
 
 const validateClientToken = middleware(async ({ ctx, next, meta }) => {
-  logger.debug(
-    {
-      permissions: meta?.requiredClientPermissions,
-    },
-    "Calling validateClientToken middleware with permissions required"
-  );
+  logger.debug("Calling validateClientToken middleware with permissions required", {
+    permissions: meta?.requiredClientPermissions,
+  });
 
   if (!ctx.token) {
     throw new TRPCError({
@@ -69,14 +70,18 @@ const validateClientToken = middleware(async ({ ctx, next, meta }) => {
 
   if (!ctx.ssr) {
     try {
-      logger.debug("trying to verify JWT token from frontend");
-      logger.debug({ token: ctx.token ? `${ctx.token[0]}...` : undefined });
+      logger.debug("trying to verify JWT token from frontend", {
+        token: ctx.token ? `${ctx.token[0]}...` : undefined,
+      });
 
       await verifyJWT({
         appId: ctx.appId,
         token: ctx.token,
         saleorApiUrl: ctx.saleorApiUrl,
-        requiredPermissions: meta?.requiredClientPermissions ?? [],
+        requiredPermissions: [
+          ...REQUIRED_SALEOR_PERMISSIONS,
+          ...(meta?.requiredClientPermissions || []),
+        ],
       });
     } catch (e) {
       logger.debug("JWT verification failed, throwing");
@@ -104,7 +109,10 @@ export const protectedClientProcedure = procedure
   .use(attachAppToken)
   .use(validateClientToken)
   .use(async ({ ctx, next }) => {
-    const client = createGraphQLClient({ saleorApiUrl: ctx.saleorApiUrl, token: ctx.appToken });
+    const client = createInstrumentedGraphqlClient({
+      saleorApiUrl: ctx.saleorApiUrl,
+      token: ctx.appToken,
+    });
 
     return next({
       ctx: {

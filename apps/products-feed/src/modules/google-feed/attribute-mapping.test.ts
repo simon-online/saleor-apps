@@ -12,6 +12,9 @@ const productBase: GoogleFeedProductVariantFragment["product"] = {
     name: "Category Name",
     googleCategoryId: "1",
   },
+  productType: {
+    isShippingRequired: true,
+  },
   description: "Product description",
   seoDescription: "Seo description",
   slug: "product-slug",
@@ -81,7 +84,7 @@ describe("attribute-mapping", () => {
             },
             values: [],
           },
-        ])
+        ]),
       ).toStrictEqual("Red");
     });
 
@@ -111,7 +114,7 @@ describe("attribute-mapping", () => {
               },
             ],
           },
-        ])
+        ]),
       ).toStrictEqual("Red/Blue/Yellow");
     });
   });
@@ -130,7 +133,7 @@ describe("attribute-mapping", () => {
             product: productBase,
             attributes: [],
           },
-        })
+        }),
       ).toStrictEqual(undefined);
     });
 
@@ -153,14 +156,16 @@ describe("attribute-mapping", () => {
             patternAttributeIds: ["pattern-id"],
             materialAttributeIds: ["material-id"],
             sizeAttributeIds: ["size-id"],
+            gtinAttributeIds: ["gtin-id"],
           },
-        })
+        }),
       ).toStrictEqual({
         material: undefined,
         color: undefined,
         size: undefined,
         brand: undefined,
         pattern: undefined,
+        gtin: undefined,
       });
     });
 
@@ -246,6 +251,16 @@ describe("attribute-mapping", () => {
                   },
                 ],
               },
+              {
+                attribute: {
+                  id: "gtin-id",
+                },
+                values: [
+                  {
+                    name: "01234500001-0",
+                  },
+                ],
+              },
             ],
           },
           attributeMapping: {
@@ -254,14 +269,16 @@ describe("attribute-mapping", () => {
             materialAttributeIds: ["material-id"],
             sizeAttributeIds: ["size-id"],
             patternAttributeIds: ["pattern-id"],
+            gtinAttributeIds: ["gtin-id"],
           },
-        })
+        }),
       ).toStrictEqual({
         material: "Cotton",
         color: "Red/Black",
         size: "XL",
         brand: "Saleor",
         pattern: "Plain",
+        gtin: "01234500001-0",
       });
     });
   });

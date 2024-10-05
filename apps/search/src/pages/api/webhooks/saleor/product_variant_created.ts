@@ -1,7 +1,11 @@
 import { NextWebhookApiHandler } from "@saleor/app-sdk/handlers/next";
+import { wrapWithLoggerContext } from "@saleor/apps-logger/node";
+import { withOtel } from "@saleor/apps-otel";
+
 import { ProductVariantCreated } from "../../../../../generated/graphql";
-import { WebhookActivityTogglerService } from "../../../../domain/WebhookActivityToggler.service";
+import { AlgoliaErrorParser } from "../../../../lib/algolia/algolia-error-parser";
 import { createLogger } from "../../../../lib/logger";
+import { loggerContext } from "../../../../lib/logger-context";
 import { webhookProductVariantCreated } from "../../../../webhooks/definitions/product-variant-created";
 import { createWebhookContext } from "../../../../webhooks/webhook-context";
 
@@ -11,16 +15,14 @@ export const config = {
   },
 };
 
-const logger = createLogger({
-  service: "webhookProductVariantCreatedWebhookHandler",
-});
+const logger = createLogger("webhookProductVariantCreatedWebhookHandler");
 
 export const handler: NextWebhookApiHandler<ProductVariantCreated> = async (req, res, context) => {
   const { event, authData } = context;
 
-  logger.debug(
-    `New event ${event} (${context.payload?.__typename}) from the ${authData.domain} domain has been received!`,
-  );
+  logger.info(`New event received: ${event} (${context.payload?.__typename})`, {
+    saleorApiUrl: authData.saleorApiUrl,
+  });
 
   const { productVariant } = context.payload;
 
@@ -38,25 +40,36 @@ export const handler: NextWebhookApiHandler<ProductVariantCreated> = async (req,
       res.status(200).end();
       return;
     } catch (e) {
-      logger.info(e, "Algolia createProductVariant failed. Webhooks will be disabled");
+      if (AlgoliaErrorParser.isRecordSizeTooBigError(e)) {
+        logger.error("Failed to create and save variant", {
+          error: e,
+        });
 
-      const webhooksToggler = new WebhookActivityTogglerService(authData.appId, apiClient);
+        return res.status(413).send((e as Error).message);
+      }
 
-      logger.trace("Will disable webhooks");
-
-      await webhooksToggler.disableOwnWebhooks(
-        context.payload.recipient?.webhooks?.map((w) => w.id),
+      logger.error(
+        "Failed to execute product_variant_created webhook (algoliaClient.createProductVariant)",
+        { error: e },
       );
 
-      logger.trace("Webhooks disabling operation finished");
-
-      return res.status(500).send("Operation failed, webhooks are disabled");
+      return res.status(500).send("Operation failed due to error");
     }
   } catch (e) {
+    logger.error("Failed to execute product_variant_created webhook (createWebhookContext)", {
+      error: e,
+    });
+
     return res.status(400).json({
       message: (e as Error).message,
     });
   }
 };
 
-export default webhookProductVariantCreated.createHandler(handler);
+export default wrapWithLoggerContext(
+  withOtel(
+    webhookProductVariantCreated.createHandler(handler),
+    "api/webhooks/saleor/product_variant_created",
+  ),
+  loggerContext,
+);

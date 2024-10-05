@@ -9,6 +9,8 @@ import { renderHandlebarsTemplate } from "../handlebarsTemplates/render-handleba
 import { transformTemplateFormat } from "../handlebarsTemplates/transform-template-format";
 import { EditorJsPlaintextRenderer } from "@saleor/apps-shared";
 import { getRelatedMedia, getVariantMediaMap } from "./get-related-media";
+import { getWeightAttributeValue } from "./get-weight-attribute-value";
+import { createLogger } from "../../logger";
 
 interface GenerateGoogleXmlFeedArgs {
   productVariants: GoogleFeedProductVariantFragment[];
@@ -20,6 +22,8 @@ interface GenerateGoogleXmlFeedArgs {
   shopDescription?: string;
 }
 
+const logger = createLogger("generateGoogleXmlFeed");
+
 export const generateGoogleXmlFeed = ({
   attributeMapping,
   productVariants,
@@ -29,6 +33,8 @@ export const generateGoogleXmlFeed = ({
   shopName,
   shopDescription,
 }: GenerateGoogleXmlFeedArgs) => {
+  logger.debug("Generating Google XML feed");
+
   const items = productVariants.map((variant) => {
     const attributes = getMappedAttributes({
       attributeMapping: attributeMapping,
@@ -67,6 +73,11 @@ export const generateGoogleXmlFeed = ({
       });
     } catch {}
 
+    const weight = getWeightAttributeValue({
+      isShippingRequired: variant.product.productType.isShippingRequired,
+      weight: variant.weight || undefined,
+    });
+
     return productToProxy({
       link,
       title: title || "",
@@ -86,9 +97,18 @@ export const generateGoogleXmlFeed = ({
       brand: attributes?.brand,
       pattern: attributes?.pattern,
       size: attributes?.size,
+      gtin: attributes?.gtin,
+      weight,
       ...pricing,
     });
   });
+
+  logger.trace("Product data mapped to proxy format", {
+    first: productVariants[0],
+    totalLength: productVariants.length,
+  });
+
+  logger.trace("Creating XMLBuilder");
 
   const builder = new XMLBuilder({
     attributeNamePrefix: "@_",
@@ -101,11 +121,15 @@ export const generateGoogleXmlFeed = ({
     preserveOrder: true,
   });
 
+  logger.trace("XMLBuilder created");
+
   const channelData = shopDetailsToProxy({
     title: shopName,
     description: shopDescription,
     storefrontUrl,
   });
+
+  logger.trace("Coverted shop details to proxy format", { channelData });
 
   const data = [
     {
@@ -133,6 +157,8 @@ export const generateGoogleXmlFeed = ({
       },
     },
   ];
+
+  logger.debug("Feed generated. Returning formatted XML");
 
   return builder.build(data);
 };

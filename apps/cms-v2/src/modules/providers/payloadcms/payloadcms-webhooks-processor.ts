@@ -4,7 +4,7 @@ import {
 } from "../../../../generated/graphql";
 
 import { PayloadCmsProviderConfig } from "@/modules/configuration/schemas/payloadcms-provider.schema";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 import { ProductWebhooksProcessor } from "../../webhooks-operations/product-webhooks-processor";
 import { PayloadCMSClient } from "./payloadcms-client";
 
@@ -14,38 +14,44 @@ import { PayloadCMSClient } from "./payloadcms-client";
 export class PayloadCmsWebhooksProcessor implements ProductWebhooksProcessor {
   private client = new PayloadCMSClient();
 
-  private logger = createLogger({ name: "PayloadCmsWebhooksProcessor" });
+  private logger = createLogger("PayloadCmsWebhooksProcessor");
 
   constructor(private providerConfig: PayloadCmsProviderConfig.FullShape) {}
 
   async onProductVariantUpdated(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantUpdated called");
+    this.logger.debug("onProductVariantUpdated called");
 
     await this.client.upsertProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant updated");
   }
 
   async onProductVariantCreated(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantCreated called");
+    this.logger.debug("onProductVariantCreated called");
 
     await this.client.uploadProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant created");
   }
   async onProductVariantDeleted(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantDeleted called");
+    this.logger.debug("onProductVariantDeleted called");
 
     await this.client.deleteProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant deleted");
   }
 
   async onProductUpdated(product: WebhookProductFragment): Promise<void> {
-    this.logger.trace("onProductUpdated called");
+    this.logger.debug("onProductUpdated called");
 
     const client = new PayloadCMSClient();
 
@@ -65,5 +71,7 @@ export class PayloadCmsWebhooksProcessor implements ProductWebhooksProcessor {
         });
       }),
     );
+
+    this.logger.info("Product updated");
   }
 }

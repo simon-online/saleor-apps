@@ -23,8 +23,6 @@
 <div align="center">
   <a href="https://docs.saleor.io/docs/3.x/developer/extending/apps/quickstart/getting-started">🆕 Apps Quickstart</a>
   <span> • </span>
-  <a href="https://github.com/orgs/saleor/projects/22/views/1">🗓️ Roadmap</a>
-  <span> • </span>
   <a href="https://github.com/saleor/apps/discussions/categories/integrations-features">✍️ Propose an app</a>
 </div>
 
@@ -47,22 +45,28 @@ This repository serves as a starting point in the exploration of Saleor apps.
 
 In the `apps` folder, you will find the following applications:
 
-- [crm](https://docs.saleor.io/docs/3.x/developer/app-store/apps/crm) - exports customers from Saleor to CRM.
-- [cms](https://docs.saleor.io/docs/3.x/developer/app-store/apps/cms) - exports products from Saleor to CMS.
+- [avatax](./apps/avatax) - calculates dynamic taxes via AvaTax API
+- [cms](./apps/cms-v2) - exports products from Saleor to CMS.
 - [data-importer](./apps/data-importer) - import data from CSV to Saleor.
-- [emails-and-messages](https://docs.saleor.io/docs/3.x/developer/app-store/apps/emails-and-messages/overview) - notifications and email communication with customers.
-- [invoices](https://docs.saleor.io/docs/3.x/developer/app-store/apps/invoices) - generate invoice PDF for each order.
 - [klaviyo](./apps/klaviyo) - send Saleor events to Klaviyo, where you can notify the customers.
-- [monitoring](./apps/monitoring) - send Saleor logs to 3rd party Monitoring services
 - [products-feed](./apps/products-feed) - generate products feed XML
 - [search](./apps/search) - connect Saleor with search engines.
-- [slack](./apps/slack) - get notifications on Slack channel from Saleor events.
-- [taxes](https://docs.saleor.io/docs/3.x/developer/app-store/apps/taxes) - calculate order and checkout taxes using external services.
+- [smtp](./apps/smtp) - email communication with customers
 
-## Another official apps
+#### Other official apps
 
-Some of Saleor apps are available in separate repositories:
+Some of the Saleor apps are available in separate repositories:
+
 - [Stripe](https://github.com/saleor/saleor-app-payment-stripe)
+
+#### Example apps
+
+- [Slack integration app example](https://github.com/saleor/example-slack-app)
+- [Taxjar integration app example](https://github.com/saleor/example-app-taxjar)
+- [Invoices app example](https://github.com/saleor/example-app-invoices)
+- [CRM app example](https://github.com/saleor/example-app-crm)
+- [Segment app example](https://github.com/saleor/example-app-segment)
+- [Sendgrid integration app example](https://github.com/saleor/example-app-sendgrid)
 
 ## Development
 

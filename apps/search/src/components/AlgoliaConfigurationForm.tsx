@@ -1,23 +1,21 @@
-import { useAuthenticatedFetch } from "@saleor/app-sdk/app-bridge";
-
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useDashboardNotification } from "@saleor/apps-shared";
-import { Box, Button, Divider, Text } from "@saleor/macaw-ui/next";
+import { Layout } from "@saleor/apps-ui";
+import { Box, Button, Text } from "@saleor/macaw-ui";
 import { Input } from "@saleor/react-hook-form-macaw";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+
+import { algoliaCredentialsVerifier } from "../lib/algolia/algolia-credentials-verifier";
 import {
   AppConfigurationFields,
   AppConfigurationSchema,
 } from "../modules/configuration/configuration";
-import { AlgoliaSearchProvider } from "../lib/algolia/algoliaSearchProvider";
 import { trpcClient } from "../modules/trpc/trpc-client";
-import { Layout } from "@saleor/apps-ui";
 
 export const AlgoliaConfigurationForm = () => {
   const { notifyError, notifySuccess } = useDashboardNotification();
-  const fetch = useAuthenticatedFetch();
 
   const [credentialsValidationError, setCredentialsValidationError] = useState(false);
 
@@ -56,15 +54,12 @@ export const AlgoliaConfigurationForm = () => {
     });
 
   const onFormSubmit = handleSubmit(async (conf) => {
-    const client = new AlgoliaSearchProvider({
-      appId: conf.appId ?? "",
-      apiKey: conf.secretKey ?? "",
-      indexNamePrefix: conf.indexNamePrefix,
-      enabledKeys: [], // not required for ping but should be refactored
-    });
-
     try {
-      await client.ping();
+      await algoliaCredentialsVerifier.verifyCredentials({
+        appId: conf.appId,
+        apiKey: conf.secretKey,
+      });
+
       setCredentialsValidationError(false);
 
       setConfig(conf);
@@ -118,7 +113,7 @@ export const AlgoliaConfigurationForm = () => {
 
         {credentialsValidationError && (
           <Box marginTop={5}>
-            <Text color={"textCriticalDefault"}>
+            <Text color={"critical1"}>
               Could not connect to Algolia. Please verify your credentials
             </Text>
           </Box>

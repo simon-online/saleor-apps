@@ -1,4 +1,4 @@
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 import {
   WebhookProductFragment,
   WebhookProductVariantFragment,
@@ -13,12 +13,12 @@ export type ContentfulClientStrip = Pick<
 >;
 
 export type ContentfulClientFactory = (
-  config: ContentfulProviderConfig.FullShape
+  config: ContentfulProviderConfig.FullShape,
 ) => ContentfulClientStrip;
 
 export class ContentfulWebhooksProcessor implements ProductWebhooksProcessor {
   private client: ContentfulClientStrip;
-  private logger = createLogger({ name: "ContentfulWebhooksProcessor" });
+  private logger = createLogger("ContentfulWebhooksProcessor");
 
   constructor(
     private providerConfig: ContentfulProviderConfig.FullShape,
@@ -26,38 +26,49 @@ export class ContentfulWebhooksProcessor implements ProductWebhooksProcessor {
       new ContentfulClient({
         accessToken: providerConfig.authToken,
         space: providerConfig.spaceId,
-      })
+      }),
   ) {
     this.client = clientFactory(providerConfig);
   }
 
   async onProductVariantUpdated(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantUpdated called");
+    this.logger.debug("onProductVariantUpdated called");
 
     await this.client.upsertProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant updated");
   }
   async onProductVariantCreated(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantCreated called");
+    this.logger.debug("onProductVariantCreated called");
 
     await this.client.upsertProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant created");
   }
   async onProductVariantDeleted(productVariant: WebhookProductVariantFragment): Promise<void> {
-    this.logger.trace("onProductVariantDeleted called");
+    this.logger.debug("onProductVariantDeleted called");
 
     await this.client.deleteProductVariant({
       configuration: this.providerConfig,
       variant: productVariant,
     });
+
+    this.logger.info("Product variant deleted");
   }
 
+  /**
+   * TODO Must check channels, otherwise variants that are not available, will be sent to CMS anyway.
+   * Probably happens in every provider type.
+   * Context of process must include channel-config mapping.
+   */
   async onProductUpdated(product: WebhookProductFragment): Promise<void> {
-    this.logger.trace("onProductUpdated called");
+    this.logger.debug("onProductUpdated called");
 
     await Promise.all(
       (product.variants ?? []).map((variant) => {
@@ -73,7 +84,9 @@ export class ContentfulWebhooksProcessor implements ProductWebhooksProcessor {
             },
           },
         });
-      })
+      }),
     );
+
+    this.logger.info("Product updated");
   }
 }

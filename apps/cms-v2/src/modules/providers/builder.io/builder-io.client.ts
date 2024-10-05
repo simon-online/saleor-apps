@@ -1,12 +1,12 @@
 import { BuilderIoProviderConfig } from "@/modules/configuration";
 import { WebhookProductVariantFragment } from "../../../../generated/graphql";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 import { FieldsMapper } from "../fields-mapper";
 
 // https://www.builder.io/c/docs/write-api
 export class BuilderIoClient {
   private endpoint: string;
-  private logger = createLogger({ name: "BuilderIoClient" });
+  private logger = createLogger("BuilderIoClient");
 
   constructor(private config: BuilderIoProviderConfig.FullShape) {
     this.endpoint = `https://builder.io/api/v1/write/${config.modelName}`;
@@ -20,10 +20,10 @@ export class BuilderIoClient {
   }
 
   async uploadProductVariant(variant: WebhookProductVariantFragment) {
-    this.logger.debug({ variantId: variant.id }, "uploadProductVariant called");
+    this.logger.debug("uploadProductVariant called", { variantId: variant.id });
 
     try {
-      const response = await fetch(this.endpoint, {
+      await fetch(this.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -35,7 +35,7 @@ export class BuilderIoClient {
         }),
       });
     } catch (err) {
-      this.logger.error(err, "Failed to upload product variant");
+      this.logger.error("Failed to upload product variant", { error: err });
 
       throw err;
     }
@@ -43,10 +43,14 @@ export class BuilderIoClient {
 
   private async updateProductVariantCall(
     builderIoEntryId: string,
-    variant: WebhookProductVariantFragment
+    variant: WebhookProductVariantFragment,
   ) {
+    this.logger.debug("updateProductVariantCall called", {
+      builderIoEntryId,
+    });
+
     try {
-      const response = await fetch(this.endpoint + `/${builderIoEntryId}`, {
+      await fetch(this.endpoint + `/${builderIoEntryId}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -58,51 +62,56 @@ export class BuilderIoClient {
         }),
       });
     } catch (err) {
-      this.logger.error(err, "Failed to upload product variant");
+      this.logger.error("Failed to upload product variant", { error: err });
 
       throw err;
     }
   }
 
   async updateProductVariant(variant: WebhookProductVariantFragment) {
+    this.logger.debug("updateProductVariant called");
+
     const entriesToUpdate = await this.fetchBuilderIoEntryIds(variant.id);
 
-    this.logger.debug(
-      {
-        entriesToUpdate,
-      },
-      "Trying to update variants in builder.io with following IDs"
-    );
+    this.logger.debug("Trying to update variants in builder.io with following IDs", {
+      entriesToUpdate,
+    });
 
     return Promise.all(
       entriesToUpdate.map((id) => {
         return this.updateProductVariantCall(id, variant);
-      })
+      }),
     );
   }
 
   async upsertProductVariant(variant: WebhookProductVariantFragment) {
+    this.logger.debug("upsertProductVariant called");
+
     const entriesToUpdate = await this.fetchBuilderIoEntryIds(variant.id);
 
     if (entriesToUpdate.length === 0) {
-      this.logger.debug("Didnt find any entries to update, will upload new variant");
+      this.logger.info("Didn't find any entries to update, will upload new variant");
 
       return this.uploadProductVariant(variant);
     } else {
-      this.logger.debug({ entriesToUpdate }, "Found entries in builder.io, will update them");
+      this.logger.info("Found entries in builder.io, will update them", { entriesToUpdate });
 
       return Promise.all(
         entriesToUpdate.map((id) => {
           return this.updateProductVariantCall(id, variant);
-        })
+        }),
       );
     }
   }
 
   async deleteProductVariant(variantId: string) {
+    this.logger.debug("deleteProductVariant called", {
+      variantId,
+    });
+
     const idsToDelete = await this.fetchBuilderIoEntryIds(variantId);
 
-    this.logger.debug({ ids: idsToDelete }, "Will try to delete items in Builder.io");
+    this.logger.debug("Will try to delete items in Builder.io", { ids: idsToDelete });
 
     return Promise.all(
       idsToDelete.map((id) =>
@@ -112,33 +121,33 @@ export class BuilderIoClient {
             "Content-Type": "application/json",
             Authorization: `Bearer ${this.config.privateApiKey}`,
           },
-        })
-      )
+        }),
+      ),
     );
   }
 
   /**
-   * Can return more than 1. Builder doesnt have unique fields.
+   * Can return more than 1. Builder doesn't have unique fields.
    */
   private fetchBuilderIoEntryIds(variantId: string): Promise<string[]> {
-    this.logger.trace(
-      {
-        modelName: this.config.modelName,
-        variantID: variantId,
-        variantFieldMapping: this.config.productVariantFieldsMapping.variantId,
-      },
-      "Trying to fetch variant from Builder.io"
-    );
+    this.logger.trace("Trying to fetch variant from Builder.io", {
+      modelName: this.config.modelName,
+      variantId,
+      variantFieldMapping: this.config.productVariantFieldsMapping.variantId,
+    });
 
     return fetch(
-      `https://cdn.builder.io/api/v3/content/${this.config.modelName}?apiKey=${this.config.publicApiKey}&query.data.${this.config.productVariantFieldsMapping.variantId}.$eq=${variantId}&limit=10&includeUnpublished=false&cacheSeconds=0`
+      `https://cdn.builder.io/api/v3/content/${this.config.modelName}?apiKey=${this.config.publicApiKey}&query.data.${this.config.productVariantFieldsMapping.variantId}.$eq=${variantId}&limit=10&includeUnpublished=false&cacheSeconds=0`,
     )
       .then((res) => res.json())
       .then((data) => {
-        return data.results.map((result: any) => result.id) as string[];
+        const results = data.results.map((result: any) => result.id) as string[];
+
+        this.logger.trace("Fetched builder.io entries", { entriesIds: results });
+        return results;
       })
       .catch((err) => {
-        this.logger.error(err, "Failed to fetch builder.io entry id");
+        this.logger.error("Failed to fetch builder.io entry id", { error: err });
         throw err;
       });
   }

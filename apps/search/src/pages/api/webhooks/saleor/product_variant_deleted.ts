@@ -1,7 +1,10 @@
 import { NextWebhookApiHandler } from "@saleor/app-sdk/handlers/next";
+import { wrapWithLoggerContext } from "@saleor/apps-logger/node";
+import { withOtel } from "@saleor/apps-otel";
+
 import { ProductVariantDeleted } from "../../../../../generated/graphql";
-import { WebhookActivityTogglerService } from "../../../../domain/WebhookActivityToggler.service";
 import { createLogger } from "../../../../lib/logger";
+import { loggerContext } from "../../../../lib/logger-context";
 import { webhookProductVariantDeleted } from "../../../../webhooks/definitions/product-variant-deleted";
 import { createWebhookContext } from "../../../../webhooks/webhook-context";
 
@@ -11,16 +14,14 @@ export const config = {
   },
 };
 
-const logger = createLogger({
-  service: "webhookProductVariantDeletedWebhookHandler",
-});
+const logger = createLogger("webhookProductVariantDeletedWebhookHandler");
 
 export const handler: NextWebhookApiHandler<ProductVariantDeleted> = async (req, res, context) => {
   const { event, authData } = context;
 
-  logger.debug(
-    `New event ${event} (${context.payload?.__typename}) from the ${authData.domain} domain has been received!`,
-  );
+  logger.info(`New event received: ${event} (${context.payload?.__typename})`, {
+    saleorApiUrl: authData.saleorApiUrl,
+  });
 
   const { productVariant } = context.payload;
 
@@ -38,25 +39,28 @@ export const handler: NextWebhookApiHandler<ProductVariantDeleted> = async (req,
       res.status(200).end();
       return;
     } catch (e) {
-      logger.info(e, "Algolia deleteProductVariant failed. Webhooks will be disabled");
-
-      const webhooksToggler = new WebhookActivityTogglerService(authData.appId, apiClient);
-
-      logger.trace("Will disable webhooks");
-
-      await webhooksToggler.disableOwnWebhooks(
-        context.payload.recipient?.webhooks?.map((w) => w.id),
+      logger.error(
+        "Failed to execute product_variant_deleted webhook (algoliaClient.deleteProductVariant)",
+        { error: e },
       );
 
-      logger.trace("Webhooks disabling operation finished");
-
-      return res.status(500).send("Operation failed, webhooks are disabled");
+      return res.status(500).send("Operation failed due to error");
     }
   } catch (e) {
+    logger.error("Failed to execute product_variant_deleted webhook (createWebhookContext)", {
+      error: e,
+    });
+
     return res.status(400).json({
       message: (e as Error).message,
     });
   }
 };
 
-export default webhookProductVariantDeleted.createHandler(handler);
+export default wrapWithLoggerContext(
+  withOtel(
+    webhookProductVariantDeleted.createHandler(handler),
+    "api/webhooks/saleor/product_variant_deleted",
+  ),
+  loggerContext,
+);

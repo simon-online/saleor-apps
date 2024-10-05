@@ -1,5 +1,54 @@
 # @saleor/apps-ui
 
+## 1.2.8
+
+### Patch Changes
+
+- 6fed4b19: Migrate to new newest MacawUI version. Functionally nothing has changed. UI may look a bit different but it will be on par with Dashboard UI.
+
+## 1.2.7
+
+### Patch Changes
+
+- 17077505: Updated TypeScript version to 4.5.4.
+
+## 1.2.6
+
+### Patch Changes
+
+- 37ecb246: Update pnpm to 9.2.0 version. It means that we also dropped support for Node.js less than 16.
+
+## 1.2.5
+
+### Patch Changes
+
+- 64d88b24: Update packages to ESM. See node [docs](https://nodejs.org/api/esm.html) for more info.
+- 5cbd3b63: Updated @saleor/app-sdk package to 0.50.1
+
+## 1.2.4
+
+### Patch Changes
+
+- 2604ce1e: Updated Next.js to 14.2.3
+
+## 1.2.3
+
+### Patch Changes
+
+- 29d10d4a: Update Next.js to version 14.1.0.
+
+## 1.2.2
+
+### Patch Changes
+
+- 99f7066: Updated Macaw UI to 1.0.0-pre.7. Removed legacy Material UI dependency from older Macaw. Code was updated to work properly with some API changes
+
+## 1.2.1
+
+### Patch Changes
+
+- fdabc51: Mapped app-sdk package to root library
+
 ## 1.2.0
 
 ### Minor Changes

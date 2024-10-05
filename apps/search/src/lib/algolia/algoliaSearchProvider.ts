@@ -11,7 +11,7 @@ import {
   productAndVariantToAlgolia,
   productAndVariantToObjectID,
 } from "./algoliaUtils";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "../logger";
 
 export interface AlgoliaSearchProviderOptions {
   appId: string;
@@ -21,7 +21,7 @@ export interface AlgoliaSearchProviderOptions {
   enabledKeys: string[];
 }
 
-const logger = createLogger({ name: "AlgoliaSearchProvider" });
+const logger = createLogger("AlgoliaSearchProvider");
 
 export class AlgoliaSearchProvider implements SearchProvider {
   #algolia: SearchClient;
@@ -189,17 +189,6 @@ export class AlgoliaSearchProvider implements SearchProvider {
       ),
     );
   }
-
-  async ping() {
-    return this.#algolia
-      .listIndices()
-      .then(() => undefined)
-      .catch((r) => {
-        if (r.status === 403) {
-          throw new Error("Algolia responded with invalid credentials");
-        }
-      });
-  }
 }
 
 type GroupedByIndex = Record<string, AlgoliaObject[]>;
@@ -231,10 +220,10 @@ const groupVariantByIndexName = (
       );
 
       if (!productChannelListing) {
-        logger.debug(
-          { var: channelListing, prod: productChannelListing },
-          "no product channel listing found - abort",
-        );
+        logger.debug("no product channel listing found - abort", {
+          var: channelListing,
+          prod: productChannelListing,
+        });
         return false;
       }
 

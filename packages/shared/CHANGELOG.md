@@ -1,5 +1,78 @@
 # @saleor/apps-shared
 
+## 1.11.2
+
+### Patch Changes
+
+- 6fed4b19: Migrate to new newest MacawUI version. Functionally nothing has changed. UI may look a bit different but it will be on par with Dashboard UI.
+
+## 1.11.1
+
+### Patch Changes
+
+- 17077505: Updated TypeScript version to 4.5.4.
+
+## 1.11.0
+
+### Minor Changes
+
+- c4dcb863: Remove Pino logger library. It was already deprecated but for non migrated apps it was causing build errors. Right now we have one logger - @saleor/app-logger pkg.
+
+### Patch Changes
+
+- 37ecb246: Update pnpm to 9.2.0 version. It means that we also dropped support for Node.js less than 16.
+
+## 1.10.3
+
+### Patch Changes
+
+- 64d88b24: Update packages to ESM. See node [docs](https://nodejs.org/api/esm.html) for more info.
+- 5cbd3b63: Updated @saleor/app-sdk package to 0.50.1
+
+## 1.10.2
+
+### Patch Changes
+
+- 2604ce1e: Updated Next.js to 14.2.3
+
+## 1.10.1
+
+### Patch Changes
+
+- f22f2b8a: Combine `APP_LOG_LEVEL` variable for `pino` & `tslog` libraries. After this change `APP_LOG_LEVEL` will take string which is one of `silent | trace | debug | info | warn | error | fatal`.
+
+## 1.10.0
+
+### Minor Changes
+
+- b29318a2: Currently, Dashboard requires from a user to have "MANAGE_APPS" to have access to the apps tab.
+  Since the release 3.20 Dashboard will allow all users to access to apps tabs without checking permission.
+  This means that apps will be checking if the user has "MANAGE_APPS" internally and show message "You do not have permission to access this page" if the user does not have the permission.
+
+## 1.9.4
+
+### Patch Changes
+
+- 29d10d4a: Update Next.js to version 14.1.0.
+
+## 1.9.3
+
+### Patch Changes
+
+- 67afe8e4: Allow passing prepending fetch exchange to urql client
+
+## 1.9.2
+
+### Patch Changes
+
+- 99f7066: Updated Macaw UI to 1.0.0-pre.7. Removed legacy Material UI dependency from older Macaw. Code was updated to work properly with some API changes
+
+## 1.9.1
+
+### Patch Changes
+
+- fdabc51: Mapped app-sdk package to root library
+
 ## 1.9.0
 
 ### Minor Changes

@@ -1,5 +1,7 @@
-const { z } = require("zod");
-const { withSentryConfig } = require("@sentry/nextjs");
+// @ts-check
+
+import { withSentryConfig } from "@sentry/nextjs";
+import { z } from "zod";
 
 const RequiredEnvs = z.object({
   APL: z.string().min(1),
@@ -7,17 +9,37 @@ const RequiredEnvs = z.object({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = () => {
-  try {
-    RequiredEnvs.parse(process.env);
-  } catch (e) {
+  const parsedEnvs = RequiredEnvs.safeParse(process.env);
+
+  if (!parsedEnvs.success) {
     console.error("🚫 Missing required env variables, see message below");
-    console.error(e.issues);
+    console.error(parsedEnvs.error.issues);
     process.exit(1);
   }
 
   return {
     reactStrictMode: true,
-    transpilePackages: ["@saleor/apps-shared", "@saleor/apps-ui", "@saleor/react-hook-form-macaw"],
+    transpilePackages: [
+      "@saleor/apps-otel",
+      "@saleor/apps-logger",
+      "@saleor/apps-shared",
+      "@saleor/apps-ui",
+      "@saleor/react-hook-form-macaw",
+    ],
+    experimental: {
+      bundlePagesExternals: true
+    },
+    /*
+     * Ignore opentelemetry warnings - https://github.com/open-telemetry/opentelemetry-js/issues/4173
+     * Remove when https://github.com/open-telemetry/opentelemetry-js/pull/4660 is released
+     */
+    /** @type {import('next').NextConfig['webpack']} */
+    webpack: (config, { isServer }) => {
+      if (isServer) {
+        config.ignoreWarnings = [{ module: /opentelemetry/ }];
+      }
+      return config;
+    },
   };
 };
 
@@ -27,17 +49,16 @@ const isSentryPropertiesInEnvironment =
 const configWithSentry = withSentryConfig(
   nextConfig,
   {
-    silent: true,
     org: process.env.SENTRY_ORG,
     project: process.env.SENTRY_PROJECT,
+    silent: true,
   },
   {
-    widenClientFileUpload: true,
-    transpileClientSDK: true,
-    tunnelRoute: "/monitoring",
     hideSourceMaps: true,
+    widenClientFileUpload: true,
     disableLogger: true,
-  }
+    tunnelRoute: "/monitoring",
+  },
 );
 
-module.exports = isSentryPropertiesInEnvironment ? configWithSentry : nextConfig;
+export default isSentryPropertiesInEnvironment ? configWithSentry : nextConfig;

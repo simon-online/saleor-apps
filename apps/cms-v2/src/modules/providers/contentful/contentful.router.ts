@@ -7,8 +7,7 @@ import { protectedClientProcedure } from "../../trpc/protected-client-procedure"
 import { router } from "../../trpc/trpc-server";
 
 import { ContentfulClient } from "./contentful-client";
-import { createFlatProxy } from "@trpc/server/shared";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 
 const procedure = protectedClientProcedure.use(({ ctx, next }) => {
   const settingsManager = createSettingsManager(ctx.apiClient, ctx.appId!);
@@ -17,7 +16,6 @@ const procedure = protectedClientProcedure.use(({ ctx, next }) => {
     ctx: {
       settingsManager,
       appConfigService: new AppConfigMetadataManager(settingsManager),
-      logger: createLogger({ name: "contentfulRouter" }),
     },
   });
 });
@@ -33,19 +31,35 @@ export const contentfulRouter = router({
       z.object({
         contentfulToken: z.string(),
         contentfulSpace: z.string(),
-      })
+      }),
     )
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ input }) => {
+      const logger = createLogger("contentfulRouter.fetchEnvironmentsFromApi");
+
+      logger.debug("Fetching environments from API", {
+        space: input.contentfulSpace,
+      });
+
       const client = new ContentfulClient({
         accessToken: input.contentfulToken,
         space: input.contentfulSpace,
       });
 
-      return client.getEnvironments().catch((e) => {
-        ctx.logger.error("Failed to fetch environments");
+      try {
+        const environments = await client.getEnvironments();
 
-        throw new TRPCError({ code: "BAD_REQUEST" });
-      });
+        logger.debug("Environments fetched successfully", {
+          environmentsLength: environments.items.length,
+        });
+
+        return environments;
+      } catch (e) {
+        logger.warn("Failed to fetch environments", { error: e });
+
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+        });
+      }
     }),
   fetchContentTypesFromApi: procedure
     .input(
@@ -53,18 +67,32 @@ export const contentfulRouter = router({
         contentfulToken: z.string(),
         contentfulSpace: z.string(),
         contentfulEnv: z.string(),
-      })
+      }),
     )
-    .mutation(({ ctx, input }) => {
+    .mutation(async ({ input }) => {
+      const logger = createLogger("contentfulRouter.fetchContentTypesFromApi");
+
+      logger.debug("Fetching content types from API", {
+        space: input.contentfulSpace,
+        env: input.contentfulEnv,
+      });
+
       const client = new ContentfulClient({
         accessToken: input.contentfulToken,
         space: input.contentfulSpace,
       });
 
-      return client.getContentTypes(input.contentfulEnv).catch((e) => {
-        ctx.logger.error("Failed to fetch content types");
+      try {
+        const contentTypes = await client.getContentTypes(input.contentfulEnv);
 
+        logger.debug("Content types fetched successfully", {
+          contentTypesLength: contentTypes.items.length,
+        });
+
+        return contentTypes;
+      } catch (e) {
+        logger.warn("Failed to fetch content types", { error: e });
         throw new TRPCError({ code: "BAD_REQUEST" });
-      });
+      }
     }),
 });

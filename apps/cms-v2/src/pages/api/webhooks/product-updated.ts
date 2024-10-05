@@ -1,3 +1,4 @@
+import { withOtel } from "@saleor/apps-otel";
 import { NextWebhookApiHandler, SaleorAsyncWebhook } from "@saleor/app-sdk/handlers/next";
 import { gql } from "urql";
 import {
@@ -9,9 +10,11 @@ import {
 import { saleorApp } from "@/saleor-app";
 import { createWebhookConfigContext } from "@/modules/webhooks-operations/create-webhook-config-context";
 import { WebhooksProcessorsDelegator } from "@/modules/webhooks-operations/webhooks-processors-delegator";
+import { loggerContext } from "../../../logger-context";
+import { wrapWithLoggerContext } from "@saleor/apps-logger/node";
 
 import * as Sentry from "@sentry/nextjs";
-import { createLogger } from "@saleor/apps-shared";
+import { createLogger } from "@/logger";
 
 export const config = {
   api: {
@@ -48,22 +51,27 @@ export const productUpdatedWebhook = new SaleorAsyncWebhook<ProductUpdatedWebhoo
 const handler: NextWebhookApiHandler<ProductUpdatedWebhookPayloadFragment> = async (
   req,
   res,
-  context
+  context,
 ) => {
-  const logger = createLogger({
-    name: "ProductUpdatedWebhook",
-    apiUrl: context.authData.saleorApiUrl,
+  const logger = createLogger("ProductUpdatedWebhook", {
+    saleorApiUrl: context.authData.saleorApiUrl,
   });
 
   const { authData, payload } = context;
 
   if (!payload.product) {
+    logger.warn("Product not found in payload");
     Sentry.captureException("Product not found in payload");
 
     return res.status(500).end();
   }
 
-  logger.info("Webhook called");
+  logger.info("Webhook called", {
+    productId: payload.product.id,
+    variantsLength: payload.product.variants?.length,
+    productName: payload.product.name,
+    channelsIds: payload.product.channelListings?.map((c) => c.channel.id) || [],
+  });
 
   const configContext = await createWebhookConfigContext({ authData });
 
@@ -71,7 +79,12 @@ const handler: NextWebhookApiHandler<ProductUpdatedWebhookPayloadFragment> = asy
     context: configContext,
   }).delegateProductUpdatedOperations(payload.product);
 
+  logger.info("Webhook processed successfully");
+
   return res.status(200).end();
 };
 
-export default productUpdatedWebhook.createHandler(handler);
+export default wrapWithLoggerContext(
+  withOtel(productUpdatedWebhook.createHandler(handler), "/api/webhooks/product-updated"),
+  loggerContext,
+);

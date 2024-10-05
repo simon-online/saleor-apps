@@ -1,11 +1,9 @@
 import { useAppBridge, useAuthenticatedFetch } from "@saleor/app-sdk/app-bridge";
-import { SALEOR_API_URL_HEADER, SALEOR_AUTHORIZATION_BEARER_HEADER } from "@saleor/app-sdk/const";
-
-import { ChangeEvent, SyntheticEvent, useEffect, useState } from "react";
-
 import { useDashboardNotification } from "@saleor/apps-shared";
 import { Breadcrumbs, ButtonsBox, Layout, SkeletonLayout, TextLink } from "@saleor/apps-ui";
-import { Box, Button, Input, Text } from "@saleor/macaw-ui/next";
+import { Box, Button, Input, Text } from "@saleor/macaw-ui";
+import { ChangeEvent, SyntheticEvent, useEffect, useState } from "react";
+
 import { useAppApi } from "../hooks/useAppApi";
 
 interface ConfigurationField {
@@ -16,7 +14,7 @@ interface ConfigurationField {
 function Instructions() {
   return (
     <Box>
-      <Text as={"h3"} variant="heading" marginY={4}>
+      <Text as={"h3"} fontWeight="bold" size={5} marginY={4}>
         How to set up
       </Text>
       <Text as="p" marginBottom={2}>
@@ -28,7 +26,7 @@ function Instructions() {
       <Text as="p" marginBottom={4}>
         Metric name can be customized, PUBLIC_TOKEN must be provided to enable the app.
       </Text>
-      <Text as={"h3"} variant="heading">
+      <Text as={"h3"} fontWeight="bold" size={5}>
         Useful links
       </Text>
       <ul>
@@ -38,7 +36,7 @@ function Instructions() {
           </TextLink>
         </li>
       </ul>
-      <Text as={"h3"} variant="heading">
+      <Text as={"h3"} fontWeight="bold" size={5}>
         How to configure
       </Text>
       <ul>
@@ -116,8 +114,15 @@ function Configuration() {
     );
   };
 
+  if (!appBridgeState) {
+    return null;
+  }
+
+  if (appBridgeState.user?.permissions.includes("MANAGE_APPS") === false) {
+    return <Text>You do not have permission to access this page.</Text>;
+  }
+
   if (error) {
-    console.error("Can't establish connection with the App API: ", error);
     return (
       <div>
         <h1>⚠️ Can&apos;t connect with the App API</h1>

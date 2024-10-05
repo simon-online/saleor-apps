@@ -1,13 +1,20 @@
-import { createLogger as _createLogger } from "@saleor/apps-shared";
+// eslint-disable-next-line no-restricted-imports
+import { attachLoggerConsoleTransport, createLogger, logger } from "@saleor/apps-logger";
+import packageJson from "../../package.json";
 
-/**
- * Extend factory to add more settings specific for the app
- */
-export const logger = _createLogger(
-  {},
-  {
-    redact: ["token", "secretKey"],
-  }
-);
+logger.settings.maskValuesOfKeys = ["token", "secretKey"];
 
-export const createLogger = logger.child.bind(logger);
+if (process.env.NODE_ENV !== "production") {
+  attachLoggerConsoleTransport(logger);
+}
+
+if (typeof window === "undefined") {
+  import("@saleor/apps-logger/node").then(
+    ({ attachLoggerOtelTransport, attachLoggerSentryTransport }) => {
+      attachLoggerSentryTransport(logger);
+      attachLoggerOtelTransport(logger, packageJson.version);
+    },
+  );
+}
+
+export { createLogger, logger };

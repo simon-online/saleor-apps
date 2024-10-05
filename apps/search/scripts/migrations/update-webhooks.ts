@@ -1,8 +1,9 @@
 /* eslint-disable turbo/no-undeclared-env-vars */
 
-import { createGraphQLClient } from "@saleor/apps-shared";
 import { AuthData } from "@saleor/app-sdk/APL";
-import { webhookMigrationRunner } from "@saleor/webhook-utils";
+import { WebhookMigrationRunner } from "@saleor/webhook-utils";
+
+import { createInstrumentedGraphqlClient } from "../../src/lib/create-instrumented-graphql-client";
 import { appWebhooks } from "../../webhooks";
 
 export const updateWebhooksScript = async ({
@@ -14,14 +15,15 @@ export const updateWebhooksScript = async ({
 }) => {
   console.log("Working on env: ", authData.saleorApiUrl);
 
-  const client = createGraphQLClient({
+  const client = createInstrumentedGraphqlClient({
     saleorApiUrl: authData.saleorApiUrl,
     token: authData.token,
   });
 
-  await webhookMigrationRunner({
-    client,
+  const runner = new WebhookMigrationRunner({
     dryRun,
+    logger: console,
+    client,
     getManifests: async ({ appDetails }) => {
       const webhooks = appDetails.webhooks;
 
@@ -31,7 +33,7 @@ export const updateWebhooksScript = async ({
       }
 
       // All webhooks in this application are turned on or off. If any of them is enabled, we enable all of them.
-      const enabled = webhooks.some((w) => w.isActive);
+      const isActive = webhooks.some((w) => w.isActive);
 
       const targetUrl = appDetails.appUrl;
 
@@ -41,7 +43,9 @@ export const updateWebhooksScript = async ({
 
       const baseUrl = new URL(targetUrl).origin;
 
-      return appWebhooks.map((w) => ({ ...w.getWebhookManifest(baseUrl), enabled }));
+      return appWebhooks.map((w) => ({ ...w.getWebhookManifest(baseUrl), isActive }));
     },
   });
+
+  await runner.migrate();
 };

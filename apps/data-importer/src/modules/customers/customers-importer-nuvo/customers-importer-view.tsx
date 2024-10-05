@@ -1,17 +1,16 @@
-import React, { useCallback, useMemo, useState } from "react";
+import { Box, Button, DefaultTheme, Text, useTheme } from "@saleor/macaw-ui";
+import dotObject from "dot-object";
 import dynamic from "next/dynamic";
 import { ConfigureAPI, OnResults, SettingsAPI } from "nuvo-react";
+import { useCallback, useMemo, useState } from "react";
+
+import { useAuthorizedToken } from "../../authorization/use-authorized-token";
+import { CustomersImportingResults } from "../customers-results/customers-importing-results";
 import {
   CustomerColumnSchema,
   getCustomersModelColumns,
   getResultModelSchema,
 } from "./customers-columns-model";
-import dotObject from "dot-object";
-import { useAuthorizedToken } from "../../authorization/use-authorized-token";
-import { Alert, Button, SaleorTheme, useTheme } from "@saleor/macaw-ui";
-import { CustomersImportingResults } from "../customers-results/customers-importing-results";
-import { LinearProgress } from "@material-ui/core";
-import { CloudUpload } from "@material-ui/icons";
 
 let PassSubmitResult: any;
 let RejectSubmitResult: any;
@@ -27,15 +26,15 @@ const NuvoImporter = dynamic<ConfigureAPI>(
   {
     ssr: false,
     loading() {
-      return <LinearProgress />;
+      return <Text>Loading</Text>;
     },
-  }
+  },
 );
 
 const columns = getCustomersModelColumns();
 
-const getNuvoSettings = (theme: SaleorTheme): SettingsAPI => {
-  const isDarkMode = theme.palette.type === "dark";
+const getNuvoSettings = (theme: DefaultTheme): SettingsAPI => {
+  const isDarkMode = theme === "defaultDark";
 
   const dropdownStyles = {
     option: {
@@ -274,14 +273,14 @@ export const CustomersImporterView = () => {
 
   const handleResults: OnResults = useCallback((resultArray) => {
     const parsedResult = resultArray.map((row) =>
-      getResultModelSchema().parse(dotObject.object(row))
+      getResultModelSchema().parse(dotObject.object(row)),
     );
 
     setImportedLines(parsedResult);
   }, []);
 
   const nuvoSettings = useMemo(() => {
-    return getNuvoSettings(saleorTheme);
+    return getNuvoSettings(saleorTheme.theme);
   }, [saleorTheme]);
 
   if (authorized === undefined) {
@@ -289,7 +288,7 @@ export const CustomersImporterView = () => {
   }
 
   if (authorized === false) {
-    return <Alert variant="error">To use this importer you need MANAGER_USERS permission</Alert>;
+    return <Box color="default1">To use this importer you need MANAGER_USERS permission</Box>;
   }
 
   if (importedLines) {
@@ -299,19 +298,13 @@ export const CustomersImporterView = () => {
   return (
     <div
       style={{
-        filter: saleorTheme.themeType === "dark" ? "invert(1)" : "none",
+        filter: saleorTheme.theme === "defaultDark" ? "invert(1)" : "none",
       }}
     >
       <NuvoImporter
         renderUploadButton={({ launch }) => {
           return (
-            <Button
-              size="large"
-              startIcon={<CloudUpload />}
-              variant="primary"
-              color="primary"
-              onClick={launch}
-            >
+            <Button size="large" variant="primary" onClick={launch}>
               Upload file
             </Button>
           );

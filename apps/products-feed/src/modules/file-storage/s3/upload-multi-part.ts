@@ -5,17 +5,15 @@ import {
   UploadPartCommand,
 } from "@aws-sdk/client-s3";
 import { UploadFileArgs } from "./upload-file";
-import { createLogger } from "@saleor/apps-shared";
 import { MULTI_PART_SIZE_THRESHOLD } from "./const";
+import { createLogger } from "../../../logger";
 
 /*
  * Code based on S3 docs:
  * https://docs.aws.amazon.com/sdk-for-javascript/v3/developer-guide/javascript_s3_code_examples.html
  */
 
-const logger = createLogger({
-  fn: "UploadMultiPart",
-});
+const logger = createLogger("UploadMultiPart");
 
 export const UploadMultiPart = async ({
   s3Client,
@@ -25,15 +23,19 @@ export const UploadMultiPart = async ({
 }: UploadFileArgs) => {
   let uploadId;
 
+  logger.trace("Uploading file", { fileName, bucketName });
+
   try {
     const multipartUpload = await s3Client.send(
       new CreateMultipartUploadCommand({
         Bucket: bucketName,
         Key: fileName,
-      })
+      }),
     );
 
     uploadId = multipartUpload.UploadId;
+
+    logger.trace(`Multipart upload ID: ${uploadId}`);
 
     const uploadPromises = [];
     // Multipart uploads require a minimum size of 5 MB per part.
@@ -54,18 +56,18 @@ export const UploadMultiPart = async ({
               UploadId: uploadId,
               Body: buffer.subarray(start, end),
               PartNumber: i + 1,
-            })
+            }),
           )
           .then((d) => {
-            logger.debug(`Part ${i + 1}/${numberOfParts} uploaded`);
+            logger.trace(`Part ${i + 1}/${numberOfParts} uploaded`);
             return d;
-          })
+          }),
       );
     }
 
     const uploadResults = await Promise.all(uploadPromises);
 
-    return await s3Client.send(
+    const completeCommand = await s3Client.send(
       new CompleteMultipartUploadCommand({
         Bucket: bucketName,
         Key: fileName,
@@ -76,10 +78,14 @@ export const UploadMultiPart = async ({
             PartNumber: i + 1,
           })),
         },
-      })
+      }),
     );
+
+    logger.debug("Multipart upload completed");
+
+    return completeCommand;
   } catch (err) {
-    logger.error(err);
+    logger.error("Error during the S3 upload", { error: err });
 
     if (uploadId) {
       const abortCommand = new AbortMultipartUploadCommand({
